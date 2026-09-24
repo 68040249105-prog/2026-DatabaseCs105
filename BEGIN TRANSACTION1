@@ -1,0 +1,61 @@
+--สำรวจข้อมูล receipts ,details,employee,products
+
+select*from Receipts
+select*from Details
+select*From Employees
+select*from Products
+
+--เป้าหมายต้องการสร้างรายการจำหน่ายสินค้า ผู้ขายคือ วุฒิศักดิื
+--สินค้าที่ขาย ได้แก่ ดินสอ 5แท่ง และยางลบ 4 ก้อน
+--เริ้่มต้น transation
+Begin Transaction
+
+--1 เพิ่มใบเสร็จใหม่ receipts ยังไม่มียอด totalcash
+insert into Receipts(ReceiptDate,EmployeeID,TotalCash)
+       values (GETDATE(),4,0)
+--2 เพิ่มรายการสินค้าใน details 2 รายการ
+insert into Details(ReceiptID,ProductID,UnitPrice,Quantity)
+       values (6,1,17,5) --ดินสอ
+
+       insert into Details(ReceiptID,ProductID,UnitPrice,Quantity)
+       values (6,2,17,4) --ยางลบ
+
+--3ปรับปรุงยอดขายใน totalcash
+update Receipts set TotalCash=
+       (select sum (unitprice*quantity) from Details
+       where ReceiptID =6)
+       where ReceiptID=6
+--4 ปรับปรุงจำนวนสินค้า ดินสอ 5 ยางลบ 4
+update Products set UnitsInStock=UnitsInStock-5 where productID=1 --ดินสอ
+update Products set UnitsInStock=UnitsInStock-4 where productID=2 --ยางลบ
+
+--จบการทำงาน
+commit
+
+--ทดสอบ roll back----
+--เริ่มต้น
+Begin Transaction
+
+--1 เพิ่มใบเสร็จใหม่ receipts ยังไม่มียอด totalcash
+insert into Receipts(ReceiptDate,EmployeeID,TotalCash)
+       values (GETDATE(),4,0)
+--2 เพิ่มรายการสินค้าใน details 2 รายการ
+insert into Details(ReceiptID,ProductID,UnitPrice,Quantity)
+       values (31,1,17,5) --ดินสอ
+
+       insert into Details(ReceiptID,ProductID,UnitPrice,Quantity)
+       values (31,2,17,4) --ยางลบ
+
+       --ตรวจสอบข้อมูลที่เกิดขึ้น
+       select * from Receipts where ReceiptID =31
+       select *from Receipts where ReceiptID =31
+       -- หาระบบผิดพลาด เราจะ roll back 
+
+       rollback
+
+       --ตรวจสอบดูข้อมูลว่ายังอยู่หรือไม่
+       select *from Receipts where ReceiptID =31
+       select * from Details where ReceiptID =31
+
+
+
